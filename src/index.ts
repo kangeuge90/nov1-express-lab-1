@@ -1,7 +1,9 @@
 // BASIC EXPRESS SETUP
 import express from 'express';
-import cart from './routes/cart';
+// import routes from './routes/cart';
 import cors from 'cors';
+import path from 'path';
+import api from './routes/Cart'
 
 const app = express(); // running a new instance of your server
 
@@ -11,9 +13,17 @@ app.use(express.json()); // allows us to access the request body as a Javascript
 app.use(cors());
 // add cors functionality
 
-app.use('/hello/', hello) // Everything after /hello/ will use the hello typescript file 
+// app.use('/hello/', hello) // Everything after /hello/ will use the hello typescript file 
 
 
+// Settings for web pages
+app.use(express.urlencoded({ extended: false }));
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'hbs');
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/api/', api);
+// app.use('/', webpage);
 
 
 

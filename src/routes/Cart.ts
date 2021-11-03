@@ -2,7 +2,7 @@ import express from 'express';
 import cartItem from '../models/cartItem';
 import ClassItem from '../models/classItem';
 
-const cart = express.Router();
+const routes = express.Router();
 
 // const cartItems = [,
 //     {
@@ -19,7 +19,9 @@ const cartItems: cartItem[] = [
     new ClassItem(3, 'mouse', 20.00, 6)
 ]
 
-cart.get('/', (req, res) => {
+let nextId = 4
+
+routes.get('/', (req, res) => {
     res.json("Hello, you");
 })
 
@@ -35,8 +37,30 @@ cart.get('/', (req, res) => {
 // pageSize - if specified, only includes up to the given number of items in the response array. 
 // For example, if there are ten items total, but pageSize=5, only return an array of the first five items.
 
-cart.get('/cart-items', (req, res) => {
-    res.json(cartItems); // return the cartItems array  -----API TECHNIQUE -----
+routes.get('/cart-items', (req, res) => {
+    let filteredItems = cartItems; // by default return everything
+
+    if (req.query.maxPrice) {
+		const maxPrice = parseFloat(req.query.maxPrice as string); // decimals, typecasting as string parseFloat will convert the given string
+                                                                    // into a decimal
+
+		filteredItems = filteredItems.filter((cartItem) => {
+            return cartItem.price <= maxPrice;  // Does this target the maximum price or the minimum price?
+        });
+	}
+
+    // EXAMPLE:
+    // if (req.query.minRating) {
+	// 	const minRating = parseFloat(req.query.minRating as string); // decimals, typecasting as string
+
+	// 	filteredShops = filteredShops.filter((shop) => {
+    //         return shop.rating >= minRating;
+    //     });
+	// }
+
+    res.json(filteredItems); 
+
+    // return the cartItems array  -----API TECHNIQUE -----
 })
 
 // 2.  
@@ -47,15 +71,21 @@ cart.get('/cart-items', (req, res) => {
 // However, if the item with that ID cannot be found in the array, return a string 
 // response “ID Not Found” with response code 404 (Not Found)
 
-cart.get('/cart-items/:id', (req,res,next) => {
-    for (let item of cartItems) {
-    const foundItem = req.params.id;
+routes.get('/cart-items/:id', (req,res) => {
+    const id = parseInt(req.params.id); // whole numbers
+
+	// find the shop that matches this id
+	const foundItem = cartItems.find(looking => looking.id === id); // looking for one match
+
+    
         if (foundItem !== undefined) { // void might be an option as well, but undefined seems to fit better here
             res.send(foundItem);
         } else {
-            res.status(404).send();
+            res.status(404);
+            res.json({
+                error: `Item not found: ${id}`,
+            });
         }
-    }
 });
 
 // 3.
@@ -65,7 +95,18 @@ cart.get('/cart-items/:id', (req,res,next) => {
 // Response: the added cart item object as JSON.
 // Response Code: 201 (Created)
 
-cart.post('/cart-items', (req, res) => {
+routes.post('/cart-items', (req, res) => {
+    //  constructing item elements, but perhaps this is the forms technique?
+    const newId = nextId
+    nextId++
+    const newProduct = req.body.product
+    const newPrice = req.body.price
+    const newQuantity = req.body.quantity
+    res.status(201);
+    const newCartItem = {id: newId, product: newProduct, price: newPrice, quantity: newQuantity}
+    cartItems.push(newCartItem);
+    res.json(newCartItem) // res.render is HTML, json is data, new object constructed
+
 
 })
 
@@ -76,8 +117,8 @@ cart.post('/cart-items', (req, res) => {
 // Response: the updated cart item object as JSON.
 // Response Code: 200 (OK).
 
-cart.put('/cart-items/:id', (req, res) => {
-
+routes.put('/cart-items/:id', (req, res) => {
+    req.params.id = req.body.id
 })
 
 // 5. 
@@ -86,13 +127,22 @@ cart.put('/cart-items/:id', (req, res) => {
 // Response: Empty
 // Response Code: 204 (No Content)
 
-cart.delete('/cart-items/:id', (req, res) => {
-    
+routes.delete('/cart-items/:id', (req, res) => {
+    // get id you are targeting and delete from array
+    const id = parseInt(req.params.id); // whole numbers
+
+	// find the shop that matches this id
+	const foundItem = cartItems.findIndex(looking => looking.id === id); // looking for one match
+
+    cartItems.splice(foundItem, 1)
+
+    res.status(204); //no content
+    res.json();
 })
 
 
 
-// cart.get('/:name', (req,res) => {
+// routes.get('/:name', (req,res) => {
 //     // get the name
 //     const name = req.params.name; // or req.params.id
 
@@ -101,4 +151,4 @@ cart.delete('/cart-items/:id', (req, res) => {
 //     res.json("Hello, " + name + ' ' + lastName);
 // })
 
-export default cart;
+export default routes;
